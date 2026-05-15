@@ -6,6 +6,8 @@ import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './auth/auth.module';
 import { GrReferentialModule } from './modules/gr-referential/gr-referential.module';
 import { TranscodificationModule } from './modules/transcodification/transcodification.module';
+import { UsersModule } from './modules/users/users.module';
+import { TenantModule } from './modules/tenant/tenant.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -19,6 +21,8 @@ import configuration from './config/configuration';
     AuthModule,
     GrReferentialModule,
     TranscodificationModule,
+    UsersModule,
+    TenantModule,
   ],
   controllers: [AppController],
   providers: [AppService],
