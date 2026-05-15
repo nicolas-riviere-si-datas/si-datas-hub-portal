@@ -4,6 +4,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './auth/auth.module';
+import { GrReferentialModule } from './modules/gr-referential/gr-referential.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -15,6 +16,7 @@ import configuration from './config/configuration';
     }),
     DatabaseModule,
     AuthModule,
+    GrReferentialModule,
   ],
   controllers: [AppController],
   providers: [AppService],
