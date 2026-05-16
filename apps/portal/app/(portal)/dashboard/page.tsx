@@ -1,93 +1,97 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useBff } from "../../../hooks/useBff";
-
-interface GrRef {
-  object_type: string;
-  target_table: string;
-  kafka_topic_raw: string | null;
-  kafka_topic_golden: string | null;
-  is_active: boolean;
-  current_schema_version: string;
-}
 
 export default function DashboardPage() {
   const { get } = useBff();
-  const [grList, setGrList] = useState<GrRef[]>([]);
+  const router = useRouter();
+  const [grCount, setGrCount] = useState<number | null>(null);
+  const [grActifs, setGrActifs] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     get("/gr-referential")
-      .then(setGrList)
-      .catch((e) => setError(e.message))
+      .then((data: any[]) => {
+        setGrCount(data.length);
+        setGrActifs(data.filter(g => g.is_active).length);
+      })
+      .catch(() => { setGrCount(0); setGrActifs(0); })
       .finally(() => setLoading(false));
   }, [get]);
 
-  const actifs = grList.filter(g => g.is_active).length;
+  const tiles = [
+    {
+      label: "Golden Records",
+      value: loading ? "..." : `${grActifs}`,
+      sub: loading ? "" : `${grCount} déployés`,
+      up: true,
+      href: "/gr-referential",
+      icon: "ti-database",
+    },
+    {
+      label: "Clients actifs",
+      value: "2",
+      sub: "client-a + client-b",
+      up: true,
+      href: null,
+      icon: "ti-building",
+    },
+    {
+      label: "BFF Routes",
+      value: "18",
+      sub: "sécurisées JWT",
+      up: true,
+      href: null,
+      icon: "ti-plug",
+    },
+    {
+      label: "Keycloak",
+      value: "OK",
+      sub: "2 realms actifs",
+      up: true,
+      href: null,
+      icon: "ti-shield-check",
+    },
+  ];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-
-      {/* Métriques */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
-        {[
-          { label: "GR Actifs",    value: actifs.toString(),              trend: `sur ${grList.length} total`, up: true  },
-          { label: "Clients",      value: "2",                            trend: "client-a + client-b",        up: true  },
-          { label: "BFF Routes",   value: "18",                           trend: "securisees JWT",             up: true  },
-          { label: "Keycloak",     value: "OK",                           trend: "2 realms actifs",            up: true  },
-        ].map((m) => (
-          <div key={m.label} style={{ background: "var(--bg-surface)", border: "0.5px solid var(--border)", borderRadius: 8, padding: 12 }}>
-            <div style={{ color: "var(--text-secondary)", fontSize: 10, marginBottom: 4 }}>{m.label}</div>
-            <div style={{ color: "var(--text-primary)", fontSize: 22, fontWeight: 500 }}>{m.value}</div>
-            <div style={{ fontSize: 10, marginTop: 4, color: m.up ? "#10b981" : "#ef4444" }}>{m.trend}</div>
+        {tiles.map((t) => (
+          <div
+            key={t.label}
+            onClick={() => t.href && router.push(t.href)}
+            style={{
+              background: "var(--bg-surface)",
+              border: "0.5px solid var(--border)",
+              borderRadius: 8,
+              padding: 14,
+              cursor: t.href ? "pointer" : "default",
+              transition: "opacity 0.15s",
+              position: "relative",
+            }}
+            onMouseEnter={e => { if (t.href) (e.currentTarget as HTMLElement).style.opacity = "0.85"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = "1"; }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+              <div style={{ color: "var(--text-secondary)", fontSize: 11 }}>{t.label}</div>
+              <i className={`ti ${t.icon}`} style={{ fontSize: 16, color: "var(--text-secondary)" }} />
+            </div>
+            <div style={{ color: "var(--text-primary)", fontSize: 24, fontWeight: 500 }}>{t.value}</div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
+              <div style={{ fontSize: 10, color: t.up ? "#10b981" : "#ef4444" }}>{t.sub}</div>
+              {t.href && <i className="ti ti-arrow-right" style={{ fontSize: 12, color: "var(--text-secondary)" }} />}
+            </div>
           </div>
         ))}
       </div>
 
-      {/* Tableau GR Référentiel */}
-      <div style={{ border: "0.5px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
-        <div style={{ background: "var(--bg-surface)", borderBottom: "0.5px solid var(--border)", padding: "10px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 500 }}>Golden Records — Référentiel</span>
-          {loading && <span style={{ color: "var(--text-secondary)", fontSize: 11 }}>Chargement...</span>}
-          {error && <span style={{ color: "#ef4444", fontSize: 11 }}>{error}</span>}
-        </div>
-
-        <div style={{ display: "flex", padding: "6px 14px", background: "var(--bg-surface)", borderBottom: "0.5px solid var(--border)" }}>
-          {["Type GR", "Table cible", "Topic Kafka RAW", "Version", "Statut"].map((h, i) => (
-            <span key={h} style={{ color: "var(--text-secondary)", fontSize: 10, fontWeight: 500, flex: i === 0 ? 2 : 1 }}>{h}</span>
-          ))}
-        </div>
-
-        {grList.length === 0 && !loading && (
-          <div style={{ padding: 24, textAlign: "center", color: "var(--text-secondary)", fontSize: 13 }}>
-            Aucune donnée — vérifiez la connexion BFF
-          </div>
-        )}
-
-        {grList.map((gr, i) => (
-          <div key={gr.object_type} style={{
-            display: "flex", padding: "8px 14px", alignItems: "center",
-            borderBottom: i < grList.length - 1 ? "0.5px solid var(--border)" : "none",
-            background: "var(--bg-main)"
-          }}>
-            <span style={{ color: "var(--text-primary)", fontSize: 11, flex: 2, fontWeight: 500 }}>{gr.object_type}</span>
-            <span style={{ color: "var(--text-secondary)", fontSize: 10, flex: 1 }}>{gr.target_table}</span>
-            <span style={{ color: "var(--text-secondary)", fontSize: 10, flex: 1 }}>{gr.kafka_topic_raw ?? "—"}</span>
-            <span style={{ color: "var(--text-secondary)", fontSize: 10, flex: 1 }}>{gr.current_schema_version}</span>
-            <span style={{ flex: 1 }}>
-              <span style={{
-                fontSize: 9, padding: "2px 8px", borderRadius: 10,
-                background: gr.is_active ? "#DCFCE7" : "#FEE2E2",
-                color: gr.is_active ? "#166534" : "#991B1B"
-              }}>
-                {gr.is_active ? "Actif" : "Inactif"}
-              </span>
-            </span>
-          </div>
-        ))}
+      <div style={{ border: "0.5px solid var(--border)", borderRadius: 8, padding: 24, textAlign: "center", background: "var(--bg-surface)" }}>
+        <i className="ti ti-chart-bar" style={{ fontSize: 32, color: "var(--text-secondary)", marginBottom: 8, display: "block" }} />
+        <div style={{ color: "var(--text-primary)", fontSize: 14, fontWeight: 500, marginBottom: 4 }}>Monitoring des flux</div>
+        <div style={{ color: "var(--text-secondary)", fontSize: 12 }}>Disponible après déploiement de Prometheus + Grafana</div>
       </div>
     </div>
   );
 }
-
