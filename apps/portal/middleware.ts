@@ -3,11 +3,12 @@ import { NextResponse } from "next/server";
 
 export default auth((req) => {
   const isLoggedIn = !!req.auth;
+  const hasError = (req.auth as any)?.error === "RefreshAccessTokenError";
   const isLoginPage = req.nextUrl.pathname.startsWith("/login");
   const isApiAuth = req.nextUrl.pathname.startsWith("/api/auth");
 
   if (isApiAuth) return NextResponse.next();
-  if (!isLoggedIn && !isLoginPage) {
+  if (hasError || (!isLoggedIn && !isLoginPage)) {
     return NextResponse.redirect(new URL("/login", req.nextUrl));
   }
   if (isLoggedIn && isLoginPage) {

@@ -19,10 +19,17 @@ export class SectionGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest();
     const user = request.user;
-    if (!user?.role) throw new ForbiddenException('Rôle non défini');
+    console.log('SectionGuard user:', JSON.stringify(user));
+    console.log('SectionGuard section:', section, 'action:', action);
+
+    if (!user?.role) {
+      console.log('SectionGuard: no role found, rejecting');
+      throw new ForbiddenException('Role non defini');
+    }
 
     const allowed = await this.authService.canAccess(user.role, section, action);
-    if (!allowed) throw new ForbiddenException(`Accès refusé : ${action} sur ${section}`);
+    console.log('SectionGuard allowed:', allowed);
+    if (!allowed) throw new ForbiddenException(`Acces refuse : ${action} sur ${section}`);
     return true;
   }
 }

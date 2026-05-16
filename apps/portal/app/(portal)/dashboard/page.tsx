@@ -1,50 +1,88 @@
+"use client";
+import { useEffect, useState } from "react";
+import { useBff } from "../../../hooks/useBff";
+
+interface GrRef {
+  object_type: string;
+  target_table: string;
+  kafka_topic_raw: string | null;
+  kafka_topic_golden: string | null;
+  is_active: boolean;
+  current_schema_version: string;
+}
+
 export default function DashboardPage() {
+  const { get } = useBff();
+  const [grList, setGrList] = useState<GrRef[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    get("/gr-referential")
+      .then(setGrList)
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
+  }, [get]);
+
+  const actifs = grList.filter(g => g.is_active).length;
+
   return (
-    <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-4 gap-3">
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+      {/* Métriques */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
         {[
-          { label: "Commandes",  value: "1 247", trend: "↑ 12%",  up: true  },
-          { label: "Clients",    value: "843",   trend: "↑ 4%",   up: true  },
-          { label: "Flux OK",    value: "99.2%", trend: "↓ 0.3%", up: false },
-          { label: "Transco",    value: "9",     trend: "stable",  up: true  },
+          { label: "GR Actifs",    value: actifs.toString(),              trend: `sur ${grList.length} total`, up: true  },
+          { label: "Clients",      value: "2",                            trend: "client-a + client-b",        up: true  },
+          { label: "BFF Routes",   value: "18",                           trend: "securisees JWT",             up: true  },
+          { label: "Keycloak",     value: "OK",                           trend: "2 realms actifs",            up: true  },
         ].map((m) => (
-          <div
-            key={m.label}
-            style={{ background: "var(--bg-surface)", border: "0.5px solid var(--border)" }}
-            className="rounded-lg p-3"
-          >
-            <div style={{ color: "var(--text-secondary)" }} className="text-[10px] mb-1">{m.label}</div>
-            <div style={{ color: "var(--text-primary)" }} className="text-xl font-medium">{m.value}</div>
-            <div className={`text-[10px] mt-1 ${m.up ? "text-emerald-500" : "text-red-500"}`}>{m.trend}</div>
+          <div key={m.label} style={{ background: "var(--bg-surface)", border: "0.5px solid var(--border)", borderRadius: 8, padding: 12 }}>
+            <div style={{ color: "var(--text-secondary)", fontSize: 10, marginBottom: 4 }}>{m.label}</div>
+            <div style={{ color: "var(--text-primary)", fontSize: 22, fontWeight: 500 }}>{m.value}</div>
+            <div style={{ fontSize: 10, marginTop: 4, color: m.up ? "#10b981" : "#ef4444" }}>{m.trend}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ border: "0.5px solid var(--border)" }} className="rounded-lg overflow-hidden">
-        <div style={{ background: "var(--bg-surface)", borderBottom: "0.5px solid var(--border)" }}
-          className="flex px-3 py-2">
-          {["Identifiant", "Type", "Source", "Statut"].map((h, i) => (
-            <span key={h} style={{ color: "var(--text-secondary)" }}
-              className={`text-[10px] font-medium ${i === 0 ? "flex-[2]" : "flex-1"}`}>{h}</span>
+      {/* Tableau GR Référentiel */}
+      <div style={{ border: "0.5px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
+        <div style={{ background: "var(--bg-surface)", borderBottom: "0.5px solid var(--border)", padding: "10px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 500 }}>Golden Records — Référentiel</span>
+          {loading && <span style={{ color: "var(--text-secondary)", fontSize: 11 }}>Chargement...</span>}
+          {error && <span style={{ color: "#ef4444", fontSize: 11 }}>{error}</span>}
+        </div>
+
+        <div style={{ display: "flex", padding: "6px 14px", background: "var(--bg-surface)", borderBottom: "0.5px solid var(--border)" }}>
+          {["Type GR", "Table cible", "Topic Kafka RAW", "Version", "Statut"].map((h, i) => (
+            <span key={h} style={{ color: "var(--text-secondary)", fontSize: 10, fontWeight: 500, flex: i === 0 ? 2 : 1 }}>{h}</span>
           ))}
         </div>
-        {[
-          { id: "ORD-2026-001", type: "SALES_ORDER", source: "SYLIUS",  status: "OK",     pill: "pill-ok"   },
-          { id: "ORD-2026-002", type: "SALES_ORDER", source: "EGO_WMS", status: "Attente",pill: "pill-warn" },
-          { id: "CUST-001",     type: "CUSTOMER",    source: "SYLIUS",  status: "OK",     pill: "pill-ok"   },
-          { id: "PCL-001",      type: "PARCEL",      source: "EGO_WMS", status: "Erreur", pill: "pill-err"  },
-        ].map((row) => (
-          <div key={row.id} style={{ borderBottom: "0.5px solid var(--border)", background: "var(--bg-main)" }}
-            className="flex px-3 py-2 items-center hover:opacity-90 cursor-pointer">
-            <span style={{ color: "var(--text-primary)" }} className="text-[11px] flex-[2]">{row.id}</span>
-            <span style={{ color: "var(--text-secondary)" }} className="text-[10px] flex-1">{row.type}</span>
-            <span style={{ color: "var(--text-secondary)" }} className="text-[10px] flex-1">{row.source}</span>
-            <span className="flex-1">
-              <span className={`text-[9px] px-2 py-0.5 rounded-full ${
-                row.pill === "pill-ok"   ? "bg-green-100 text-green-800"  :
-                row.pill === "pill-warn" ? "bg-yellow-100 text-yellow-800" :
-                                          "bg-red-100 text-red-800"
-              }`}>{row.status}</span>
+
+        {grList.length === 0 && !loading && (
+          <div style={{ padding: 24, textAlign: "center", color: "var(--text-secondary)", fontSize: 13 }}>
+            Aucune donnée — vérifiez la connexion BFF
+          </div>
+        )}
+
+        {grList.map((gr, i) => (
+          <div key={gr.object_type} style={{
+            display: "flex", padding: "8px 14px", alignItems: "center",
+            borderBottom: i < grList.length - 1 ? "0.5px solid var(--border)" : "none",
+            background: "var(--bg-main)"
+          }}>
+            <span style={{ color: "var(--text-primary)", fontSize: 11, flex: 2, fontWeight: 500 }}>{gr.object_type}</span>
+            <span style={{ color: "var(--text-secondary)", fontSize: 10, flex: 1 }}>{gr.target_table}</span>
+            <span style={{ color: "var(--text-secondary)", fontSize: 10, flex: 1 }}>{gr.kafka_topic_raw ?? "—"}</span>
+            <span style={{ color: "var(--text-secondary)", fontSize: 10, flex: 1 }}>{gr.current_schema_version}</span>
+            <span style={{ flex: 1 }}>
+              <span style={{
+                fontSize: 9, padding: "2px 8px", borderRadius: 10,
+                background: gr.is_active ? "#DCFCE7" : "#FEE2E2",
+                color: gr.is_active ? "#166534" : "#991B1B"
+              }}>
+                {gr.is_active ? "Actif" : "Inactif"}
+              </span>
             </span>
           </div>
         ))}
@@ -52,3 +90,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+
