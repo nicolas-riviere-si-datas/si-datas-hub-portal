@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 const NAV = [
   {
-    label: "Données",
+    label: "Donnees",
     items: [
       { href: "/dashboard",      icon: "ti-layout-dashboard", label: "Dashboard"      },
       { href: "/golden-records", icon: "ti-database",         label: "Golden Records" },
@@ -13,10 +13,10 @@ const NAV = [
     ],
   },
   {
-    label: "Intégration",
+    label: "Integration",
     items: [
       { href: "/transcodification", icon: "ti-arrows-right-left", label: "Transcodification" },
-      { href: "/gr-referential",    icon: "ti-list",              label: "GR Référentiel"    },
+      { href: "/gr-referential",    icon: "ti-list",              label: "GR Referentiel"    },
       { href: "/gouvernance",       icon: "ti-shield-check",      label: "Gouvernance"       },
     ],
   },
@@ -24,7 +24,7 @@ const NAV = [
     label: "Admin",
     items: [
       { href: "/users",       icon: "ti-users",    label: "Utilisateurs" },
-      { href: "/parametrage", icon: "ti-settings", label: "Paramétrage"  },
+      { href: "/parametrage", icon: "ti-settings", label: "Parametrage"  },
     ],
   },
 ];
@@ -32,60 +32,44 @@ const NAV = [
 interface SidebarProps {
   tenantName: string;
   clientId: string;
+  logoIcon: string;
   userName: string;
   userRole: string;
   userInitials: string;
   sidebarColor: string;
   accentColor: string;
-  logoUrl?: string;       // URL logo complet (mode expanded)
-  logoIconUrl?: string;   // URL logo icône/sigle (mode collapsed)
+  logoUrl?: string;
+  logoIconUrl?: string;
+  onSignOut?: () => void;
 }
 
 export default function Sidebar({
-  tenantName, clientId, userName, userRole, userInitials,
-  sidebarColor, accentColor, logoUrl, logoIconUrl
+  tenantName, clientId, logoIcon, userName, userRole, userInitials,
+  sidebarColor, accentColor, logoUrl, logoIconUrl, onSignOut
 }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
 
-  const LogoCollapsed = () => (
+  const LogoSquare = () => (
     logoIconUrl
-      ? <img src={logoIconUrl} alt="logo" style={{ width: 28, height: 28, objectFit: "contain", borderRadius: 6 }} />
-      : <div style={{ background: accentColor, color: sidebarColor, width: 28, height: 28, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, flexShrink: 0 }}>
-          {tenantName.charAt(0)}
-        </div>
+      ? <img src={logoIconUrl} alt="logo" style={{ width: 32, height: 32, objectFit: "contain", borderRadius: 6 }} />
+      : <div style={{ background: accentColor, color: sidebarColor, width: 32, height: 32, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, flexShrink: 0 }}>{logoIcon}</div>
   );
 
-  const LogoExpanded = () => (
+  const LogoFull = () => (
     logoUrl
-      ? <img src={logoUrl} alt={tenantName} style={{ height: 32, maxWidth: 130, objectFit: "contain", objectPosition: "left" }} />
-      : <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ background: accentColor, color: sidebarColor, width: 28, height: 28, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, flexShrink: 0 }}>
-            {tenantName.charAt(0)}
-          </div>
-          <div>
-            <div style={{ color: "white", fontSize: 12, fontWeight: 500 }}>{tenantName}</div>
-            <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 10 }}>{clientId}</div>
-          </div>
+      ? <img src={logoUrl} alt={tenantName} style={{ height: 36, maxWidth: 160, objectFit: "contain", objectPosition: "left" }} />
+      : <div style={{ display: "flex", alignItems: "center", gap: 10, overflow: "hidden" }}>
+          <div style={{ background: accentColor, color: sidebarColor, width: 32, height: 32, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, flexShrink: 0 }}>{logoIcon}</div>
+          <span style={{ color: "white", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tenantName}</span>
         </div>
   );
 
   return (
     <div style={{ position: "relative", display: "flex", flexShrink: 0 }}>
-      <aside style={{
-        background: sidebarColor,
-        width: collapsed ? 52 : 200,
-        transition: "width 0.25s cubic-bezier(.4,0,.2,1)",
-        display: "flex",
-        flexDirection: "column",
-        height: "100vh",
-        overflow: "hidden",
-      }}>
-        <div style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", minHeight: 56, display: "flex", alignItems: "center", padding: "0 12px" }}>
-          {collapsed
-            ? <LogoCollapsed />
-            : <LogoExpanded />
-          }
+      <aside style={{ background: sidebarColor, width: collapsed ? 52 : 200, transition: "width 0.25s cubic-bezier(.4,0,.2,1)", display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden" }}>
+        <div style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", minHeight: 56, display: "flex", alignItems: "center", padding: "0 10px" }}>
+          {collapsed ? <LogoSquare /> : <LogoFull />}
         </div>
 
         <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>
@@ -115,13 +99,17 @@ export default function Sidebar({
         </div>
 
         <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: collapsed ? "8px 0" : "8px 12px", justifyContent: collapsed ? "center" : "flex-start", cursor: "pointer" }}>
+          <div
+            style={{ display: "flex", alignItems: "center", gap: 8, padding: collapsed ? "8px 0" : "8px 12px", justifyContent: collapsed ? "center" : "flex-start", cursor: "pointer" }}
+            onClick={onSignOut}
+            title={collapsed ? `${userName} — Deconnexion` : undefined}
+          >
             <div style={{ width: 28, height: 28, borderRadius: "50%", background: accentColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600, color: sidebarColor, flexShrink: 0 }}>
               {userInitials}
             </div>
-            <div style={{ overflow: "hidden", opacity: collapsed ? 0 : 1, transition: "opacity 0.15s", whiteSpace: "nowrap" }}>
+            <div style={{ overflow: "hidden", opacity: collapsed ? 0 : 1, transition: "opacity 0.15s", whiteSpace: "nowrap", flex: 1 }}>
               <div style={{ fontSize: 11, color: "rgba(255,255,255,0.9)" }}>{userName}</div>
-              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)" }}>{userRole}</div>
+              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)" }}>{userRole} — Deconnexion</div>
             </div>
           </div>
         </div>
